@@ -1,2 +1,11 @@
 *.class
 *.log
+
+# IntelliJ
+target/
+*.iml
+.idea/vcs.xml
+.idea/modules.xml
+.idea/uiDesigner.xml
+.idea/**/workspace.xml
+.idea/**/libraries
