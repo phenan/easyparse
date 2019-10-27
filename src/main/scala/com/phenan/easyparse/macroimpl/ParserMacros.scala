@@ -37,41 +37,44 @@ class ParserMacros (val c: whitebox.Context) extends MacroCommons {
     }
   }
 
-  private def buildParser (info: ParserInfo): Tree = {
-    val parsers = info.parserPatterns.map {
-      case LexerPatternInfo(lexer, _)   => q"Parser.fromLexer($lexer)"
-      case ParserPatternInfo(parser, _) => parser
-    }
+  private def buildParser (info: ParserInfo): Tree = info.parserPatterns match {
+    case Nil =>
+      q"Parser.tokens(${info.parts.head})"
+    case parserPatterns =>
+      val parsers = parserPatterns.map {
+        case LexerPatternInfo(lexer, _)   => q"Parser.fromLexer($lexer)"
+        case ParserPatternInfo(parser, _) => parser
+      }
 
-    val prefixedParsers = info.parts.init.zip(parsers).map {
-      case (Literal(Constant("")), parser) =>
-        parser
-      case (part, parser) =>
-        q"Parser.prefixed(Parser.tokens($part), $parser)"
-    }
+      val prefixedParsers = info.parts.init.zip(parsers).map {
+        case (Literal(Constant("")), parser) =>
+          parser
+        case (part, parser) =>
+          q"Parser.prefixed(Parser.tokens($part), $parser)"
+      }
 
-    val sequenceWithoutLast = prefixedParsers.init.foldRight(prefixedParsers.last) { (prefixedParser, seq) =>
-      q"Parser.seq($prefixedParser, $seq)"
-    }
+      val sequenceWithoutLast = prefixedParsers.init.foldRight(prefixedParsers.last) { (prefixedParser, seq) =>
+        q"Parser.seq($prefixedParser, $seq)"
+      }
 
-    val seq = info.parts.last match {
-      case Literal(Constant("")) =>
-        sequenceWithoutLast
-      case postfix =>
-        q"Parser.postfixed($sequenceWithoutLast, Parser.tokens($postfix))"
-    }
+      val seq = info.parts.last match {
+        case Literal(Constant("")) =>
+          sequenceWithoutLast
+        case postfix =>
+          q"Parser.postfixed($sequenceWithoutLast, Parser.tokens($postfix))"
+      }
 
-    val patterns = info.parserPatterns.map(pattern => pattern.pattern)
+      val patterns = parserPatterns.map(pattern => pattern.pattern)
 
-    val pat = patterns.init.foldRight(patterns.last) { (pattern, seq) =>
-      pq"($pattern, $seq)"
-    }
+      val pat = patterns.init.foldRight(patterns.last) { (pattern, seq) =>
+        pq"($pattern, $seq)"
+      }
 
-    if (info.condition.nonEmpty) {
-      q"$seq.collect { case $pat if ${info.condition} => ${info.expression} }"
-    } else {
-      q"$seq.map { case $pat => ${info.expression} }"
-    }
+      if (info.condition.nonEmpty) {
+        q"$seq.collect { case $pat if ${info.condition} => ${info.expression} }"
+      } else {
+        q"$seq.map { case $pat => ${info.expression} }"
+      }
   }
 
   private def checkParserCase (tree: Tree): ParserInfo = tree match {
