@@ -1,7 +1,8 @@
 package com.phenan.easyparse
 
-import scala.language.existentials
+import com.phenan.easyparse.evaluator.ScalaParserBackedEvaluator
 
+import scala.language.existentials
 import org.scalatest._
 
 sealed trait MyToken
@@ -33,6 +34,9 @@ class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers {
 
     assert(foo.isInstanceOf[ParserImpl.MappedParser[_, _, _]])
     assert(foo.asInstanceOf[ParserImpl.MappedParser[_, _, _]].parser == ParserImpl.PrefixedParser(ParserImpl.TokensParser[Token](Seq(WordToken("foo"))), ParserImpl.LexicalParser[Token, IntToken](intToken)))
+
+    val scalaParserBackedEvaluator = new ScalaParserBackedEvaluator(lexer, whitespace)
+    assert(scalaParserBackedEvaluator.runParse("foo 5", foo) == Right(Foo(IntToken(5))))
   }
 
 }
