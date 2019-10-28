@@ -10,8 +10,6 @@ class ParserMacros (val c: whitebox.Context) extends MacroCommons {
       val info = cases.map(checkParserCase)
       val parser = buildComposedParser(info)
 
-      println(parser)
-
       resetAllSymbols(parser)
       c.untypecheck(parser)
 

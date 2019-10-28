@@ -10,8 +10,6 @@ class LexerMacros (val c: whitebox.Context) extends MacroCommons {
       val info = cases.map(checkLexerCase)
       val lexer = buildComposedLexer(info)
 
-      println(lexer)
-
       resetAllSymbols(lexer)
       c.untypecheck(lexer)
 
