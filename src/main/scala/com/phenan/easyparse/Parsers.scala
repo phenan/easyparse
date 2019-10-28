@@ -10,6 +10,7 @@ trait Parsers extends Implicits {
   type Token
 
   def lexer: Lexer[Token]
+  def whitespace: Lexer[Any]
 
   type Parser[T] = com.phenan.easyparse.Parser[Token, T]
 
@@ -23,7 +24,9 @@ trait Parsers extends Implicits {
     def prefixed [T] (prefix: Parser[_], parser: Parser[T]): Parser[T] = ParserImpl.PrefixedParser(prefix, parser)
     def postfixed [T] (parser: Parser[T], postfix: Parser[_]): Parser[T] = ParserImpl.PostfixedParser(parser, postfix)
 
-    def tokens (string: String): Parser[Seq[Token]] = SimpleStringLexerEvaluator.runLexer(lexer.*, string) match {
+    private val lexerEvaluator: SimpleStringLexerEvaluator[Token] = new SimpleStringLexerEvaluator[Token](lexer, whitespace)
+
+    def tokens (string: String): Parser[Seq[Token]] = lexerEvaluator.runLexer(string) match {
       case Right(tokens) => ParserImpl.TokensParser(tokens)
       case Left(err)     => throw err
     }

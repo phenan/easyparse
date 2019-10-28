@@ -21,10 +21,14 @@ class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers {
 
   override val lexer: Lexer[Token] = Lexer.choice(Seq(intToken, wordToken))
 
+  override val whitespace: Lexer[Any] = Lexer {
+    case l" " => " "
+  }
+
   "simple parser" should "be able to build with easy notation" in {
 
     val foo: Parser[Foo] = Parser {
-      case p"foo${intToken(n)}" => Foo(n)
+      case p"foo ${intToken(n)}" => Foo(n)
     }
 
     assert(foo.isInstanceOf[ParserImpl.MappedParser[_, _, _]])

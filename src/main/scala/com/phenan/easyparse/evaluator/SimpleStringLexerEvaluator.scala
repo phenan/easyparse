@@ -3,26 +3,43 @@ package com.phenan.easyparse.evaluator
 import com.phenan.easyparse.{Lexer, LexerImpl}
 import com.phenan.easyparse.errors.LexicalError
 
-object SimpleStringLexerEvaluator {
+class SimpleStringLexerEvaluator [Token] (lex: Lexer[Token], whitespace: Lexer[Any]) {
 
-  def runLexer [T] (lex: Lexer[T], in: String): Either[LexicalError, T] = {
-    evaluatorVisitor.visit(lex)(in) match {
-      case Right((rest, t)) if rest.isEmpty =>
-        Right(t)
-      case Right((rest, _)) =>
-        Left(LexicalError(s"found extra string: $rest"))
-      case Left(err) =>
-        Left(err)
-    }
+  def runLexer (in: String): Either[LexicalError, Seq[Token]] = tokenSequenceLexer(in) match {
+    case Right((rest, t)) if rest.isEmpty => Right(t)
+    case Right((rest, _)) => Left(LexicalError(s"found extra string: $rest"))
+    case Left(err)        => Left(err)
   }
 
   private type SimpleLexerEvaluator[+T] = String => Either[LexicalError, (String, T)]
 
-  private val evaluatorVisitor = new LexerImpl.LexerVisitor[SimpleLexerEvaluator] {
+  private val tokenLexer: SimpleLexerEvaluator[Token] = EvaluatorVisitor.visit(lex)
+  private val whitespaceLexer: SimpleLexerEvaluator[Any] = EvaluatorVisitor.visit(whitespace)
+
+  private val tokenSequenceLexer: SimpleLexerEvaluator[Seq[Token]] = { in =>
+    @scala.annotation.tailrec
+    def consumeWhitespaces (in1: String): String = whitespaceLexer(in1) match {
+      case Right((in2, _)) => consumeWhitespaces(in2)
+      case Left(_)         => in1
+    }
+    @scala.annotation.tailrec
+    def parseTokens (in1: String, parsed: Seq[Token]): (String, Seq[Token]) = {
+      val in2 = consumeWhitespaces(in1)
+      tokenLexer(in2) match {
+        case Right((in3, token)) => parseTokens(in3, parsed :+ token)
+        case Left(_)             => (in2, parsed)
+      }
+    }
+    Right(parseTokens(in, Seq.empty))
+  }
+
+  private object EvaluatorVisitor extends LexerImpl.LexerVisitor[SimpleLexerEvaluator] {
     override def visitPureLexer[T] (lexer: LexerImpl.PureLexer[T]): SimpleLexerEvaluator[T] = { in =>
       Right((in, lexer.value))
     }
+
     override def visitChoiceLexer[T] (lexer: LexerImpl.ChoiceLexer[T]): SimpleLexerEvaluator[T] = { in =>
+      @scala.annotation.tailrec
       def run (evaluators: Seq[SimpleLexerEvaluator[T]]): Either[LexicalError, (String, T)] = evaluators match {
         case head :: tail => head(in) match {
           case Left(_) => run(tail)
@@ -73,6 +90,7 @@ object SimpleStringLexerEvaluator {
     }
 
     override def visitRepeatedLexer[T] (lexer: LexerImpl.RepeatedLexer[T]): SimpleLexerEvaluator[Seq[T]] = { in =>
+      @scala.annotation.tailrec
       def run (evaluator: SimpleLexerEvaluator[T], in: String, result: Seq[T]): (String, Seq[T]) = evaluator(in) match {
         case Right((rest, t)) => run(evaluator, rest, result :+ t)
         case Left(_)          => (in, result)
