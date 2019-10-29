@@ -1,6 +1,6 @@
 package com.phenan.easyparse
 
-import com.phenan.easyparse.evaluator.SimpleStringLexerEvaluator
+import com.phenan.easyparse.backend.SimpleStringLexerEvaluator
 
 import scala.language.experimental.macros
 import com.phenan.easyparse.macroimpl.ParserMacros

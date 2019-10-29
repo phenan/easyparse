@@ -1,4 +1,4 @@
-package com.phenan.easyparse.evaluator
+package com.phenan.easyparse.backend
 
 import com.phenan.easyparse.errors.ParseError
 import com.phenan.easyparse.{Lexer, LexerImpl, ParserImpl}
@@ -8,17 +8,17 @@ import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.combinator.token.Tokens
 import scala.util.parsing.input.{CharSequenceReader, Reader}
 
-trait ScalaParserBackedEvaluator {
+trait ScalaParserCombinatorBackend {
   this: com.phenan.easyparse.Parsers =>
 
   def runParse [T] (in: String, parser: com.phenan.easyparse.Parser[Token, T]): Either[ParseError, T] = {
     parsers.runParse(in, parser)
   }
 
-  private lazy val parsers = new ScalaParserBackedEvaluator.ScalaParsersBackedParser(lexer, whitespace)
+  private lazy val parsers = new ScalaParserCombinatorBackend.ScalaParsersBackedParser(lexer, whitespace)
 }
 
-object ScalaParserBackedEvaluator {
+object ScalaParserCombinatorBackend {
   trait EvaluatorTokens extends Tokens {
     case class EvaluatorToken[+E] (value: E, chars: String) extends Token {
       def map [F] (f: E => F): EvaluatorToken[F] = EvaluatorToken(f(value), chars)

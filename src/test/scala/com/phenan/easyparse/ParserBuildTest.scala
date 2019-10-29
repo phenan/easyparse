@@ -1,6 +1,6 @@
 package com.phenan.easyparse
 
-import com.phenan.easyparse.evaluator.ScalaParserBackedEvaluator
+import com.phenan.easyparse.backend.ScalaParserCombinatorBackend
 
 import scala.language.existentials
 import org.scalatest._
@@ -11,7 +11,7 @@ case class WordToken (x: String) extends MyToken
 
 case class Foo (i: IntToken)
 
-class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers with ScalaParserBackedEvaluator {
+class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers with ScalaParserCombinatorBackend {
   override type Token = MyToken
 
   val digit = Lexer.any.filter(_.isDigit)

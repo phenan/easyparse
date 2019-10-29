@@ -1,4 +1,4 @@
-package com.phenan.easyparse.evaluator
+package com.phenan.easyparse.backend
 
 import com.phenan.easyparse.{Lexer, LexerImpl}
 import com.phenan.easyparse.errors.LexicalError
