@@ -28,7 +28,7 @@ trait Parsers extends Implicits {
 
     def tokens (string: String): Parser[Seq[Token]] = lexerEvaluator.runLexer(string) match {
       case Right(tokens) => ParserImpl.TokensParser(tokens)
-      case Left(err)     => throw err
+      case Left(err)     => throw new RuntimeException(s"syntax error in $string. error: $err")
     }
 
     def fromLexer [T] (lexer: Lexer[T]): Parser[T] = ParserImpl.LexicalParser(lexer)
