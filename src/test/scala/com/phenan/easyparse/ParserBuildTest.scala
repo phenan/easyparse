@@ -11,7 +11,7 @@ case class WordToken (x: String) extends MyToken
 
 case class Foo (i: IntToken)
 
-class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers {
+class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers with ScalaParserBackedEvaluator {
   override type Token = MyToken
 
   val digit = Lexer.any.filter(_.isDigit)
@@ -35,8 +35,7 @@ class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers {
     assert(foo.isInstanceOf[ParserImpl.MappedParser[_, _, _]])
     assert(foo.asInstanceOf[ParserImpl.MappedParser[_, _, _]].parser == ParserImpl.PrefixedParser(ParserImpl.TokensParser[Token](Seq(WordToken("foo"))), ParserImpl.LexicalParser[Token, IntToken](intToken)))
 
-    val scalaParserBackedEvaluator = new ScalaParserBackedEvaluator(lexer, whitespace)
-    assert(scalaParserBackedEvaluator.runParse("foo 5", foo) == Right(Foo(IntToken(5))))
+    assert(runParse("foo 5", foo) == Right(Foo(IntToken(5))))
   }
 
 }

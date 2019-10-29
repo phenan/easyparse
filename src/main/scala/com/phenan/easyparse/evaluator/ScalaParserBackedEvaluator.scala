@@ -8,12 +8,14 @@ import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.combinator.token.Tokens
 import scala.util.parsing.input.{CharSequenceReader, Reader}
 
-class ScalaParserBackedEvaluator [E] (lexer: Lexer[E], whitespaceLexer: Lexer[Any]) {
-  def runParse [T] (in: String, parser: com.phenan.easyparse.Parser[E, T]): Either[ParseError, T] = {
+trait ScalaParserBackedEvaluator {
+  this: com.phenan.easyparse.Parsers =>
+
+  def runParse [T] (in: String, parser: com.phenan.easyparse.Parser[Token, T]): Either[ParseError, T] = {
     parsers.runParse(in, parser)
   }
 
-  private val parsers = new ScalaParserBackedEvaluator.ScalaParsersBackedParser(lexer, whitespaceLexer)
+  private lazy val parsers = new ScalaParserBackedEvaluator.ScalaParsersBackedParser(lexer, whitespace)
 }
 
 object ScalaParserBackedEvaluator {
