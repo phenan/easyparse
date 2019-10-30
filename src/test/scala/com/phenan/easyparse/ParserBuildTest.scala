@@ -8,8 +8,11 @@ import org.scalatest._
 sealed trait MyToken
 case class IntToken (x: Int) extends MyToken
 case class WordToken (x: String) extends MyToken
+case object PlusSymbol extends MyToken
 
-case class Foo (i: IntToken)
+sealed trait Expr
+case class IntLit (i: IntToken) extends Expr
+case class Add (a: IntToken, b: Expr) extends Expr
 
 class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers with ScalaParserCombinatorBackend {
   override type Token = MyToken
@@ -17,25 +20,24 @@ class ParserBuildTest extends FlatSpec with DiagrammedAssertions with Parsers wi
   val digit = Lexer.any.filter(_.isDigit)
   val letter = Lexer.any.filter(_.isLetter)
 
-  val intToken = digit.+.map(_.mkString.toInt).map(IntToken)
-  val wordToken = letter.+.map(_.mkString).map(WordToken)
+  lazy val intToken = digit.+.map(_.mkString.toInt).map(IntToken)
+  lazy val wordToken = letter.+.map(_.mkString).map(WordToken)
+  lazy val plusToken = Lexer.string("+").map(_ => PlusSymbol)
 
-  override val lexer: Lexer[Token] = Lexer.choice(Seq(intToken, wordToken))
+  override lazy val lexer: Lexer[Token] = Lexer.choice(Seq(intToken, wordToken, plusToken))
 
-  override val whitespace: Lexer[Any] = Lexer {
+  override lazy val whitespace: Lexer[Any] = Lexer {
     case l" " => " "
   }
 
   "simple parser" should "be able to build with easy notation" in {
 
-    val foo: Parser[Foo] = Parser {
-      case p"foo ${intToken(n)}" => Foo(n)
+    lazy val expr: Parser[Expr] = Parser {
+      case p"${intToken(n)} + ${expr(e)}" => Add(n, e)
+      case p"${intToken(n)}"              => IntLit(n)
     }
 
-    assert(foo.isInstanceOf[ParserImpl.MappedParser[_, _, _]])
-    assert(foo.asInstanceOf[ParserImpl.MappedParser[_, _, _]].parser == ParserImpl.PrefixedParser(ParserImpl.TokensParser[Token](Seq(WordToken("foo"))), ParserImpl.LexicalParser[Token, IntToken](intToken)))
-
-    assert(runParse("foo 5", foo) == Right(Foo(IntToken(5))))
+    assert(runParse("5", expr) == Right(IntLit(IntToken(5))))
   }
 
 }

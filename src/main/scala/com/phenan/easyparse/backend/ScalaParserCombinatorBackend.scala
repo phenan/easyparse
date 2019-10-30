@@ -50,11 +50,11 @@ private class ScalaParsersBackedParser [E] (lexer: Lexer[E], whitespaceLexer: Le
     }
 
     override def visitMappedParser[L, T1, T2] (parser: ParserImpl.MappedParser[L, T1, T2]): Parser[T2] = {
-      visit(parser.parser) ^^ parser.f
+      visit(parser.parser) ^^ parser.mapping
     }
 
     override def visitPartialMappedParser[L, T1, T2] (parser: ParserImpl.PartialMappedParser[L, T1, T2]): Parser[T2] = {
-      visit(parser.parser) ^? parser.f
+      visit(parser.parser) ^? parser.mapping
     }
 
     override def visitSequentialParser[L, T1, T2] (parser: ParserImpl.SequentialParser[L, T1, T2]): Parser[(T1, T2)] = {

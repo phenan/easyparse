@@ -17,21 +17,27 @@ trait Parsers extends Implicits {
   object Parser {
     def apply [T] (pf: PartialFunction[String, T]): Parser[T] = macro ParserMacros.parserMacroImpl
 
-    def pure [T] (value: T): Parser[T] = ParserImpl.PureParser(value)
-    def choice [T] (parsers: Seq[Parser[T]]) = ParserImpl.ChoiceParser(parsers)
+    def pure [T] (value: T): Parser[T] = new ParserImpl.PureParser(value)
+    def choice [T] (parsers: => Seq[Parser[T]]) = new ParserImpl.ChoiceParser(parsers)
 
-    def seq [T, U] (parser1: Parser[T], parser2: Parser[U]): Parser[(T, U)] = ParserImpl.SequentialParser(parser1, parser2)
-    def prefixed [T] (prefix: Parser[_], parser: Parser[T]): Parser[T] = ParserImpl.PrefixedParser(prefix, parser)
-    def postfixed [T] (parser: Parser[T], postfix: Parser[_]): Parser[T] = ParserImpl.PostfixedParser(parser, postfix)
+    def seq [T, U] (parser1: => Parser[T], parser2: => Parser[U]): Parser[(T, U)] = new ParserImpl.SequentialParser(parser1, parser2)
+    def prefixed [T] (prefix: => Parser[_], parser: => Parser[T]): Parser[T] = new ParserImpl.PrefixedParser(prefix, parser)
+    def postfixed [T] (parser: => Parser[T], postfix: => Parser[_]): Parser[T] = new ParserImpl.PostfixedParser(parser, postfix)
 
     private val lexerEvaluator: SimpleStringLexerEvaluator[Token] = new SimpleStringLexerEvaluator[Token](lexer, whitespace)
 
     def tokens (string: String): Parser[Seq[Token]] = lexerEvaluator.runLexer(string) match {
-      case Right(tokens) => ParserImpl.TokensParser(tokens)
+      case Right(tokens) => new ParserImpl.TokensParser(tokens)
       case Left(err)     => throw new RuntimeException(s"syntax error in $string. error: $err")
     }
 
-    def fromLexer [T] (lexer: Lexer[T]): Parser[T] = ParserImpl.LexicalParser(lexer)
+    def fromLexer [T] (lexer: => Lexer[T]): Parser[T] = new ParserImpl.LexicalParser(lexer)
+  }
+
+  implicit class ParserOps [T] (parser: => Parser[T]) {
+    def map [U] (f: T => U): Parser[U] = new ParserImpl.MappedParser(parser, f)
+    def collect [U] (f: PartialFunction[T, U]): Parser[U] = new ParserImpl.PartialMappedParser(parser, f)
+    def filter (f: T => Boolean): Parser[T] = new ParserImpl.FilteredParser(parser, f)
   }
 
 }
